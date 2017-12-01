@@ -1,0 +1,573 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Label Wood Knot Images</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <!-- Optional Bootstrap theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+    <!-- Include SmartWizard CSS -->
+    <link href="stylesheets/smart_wizard.css" rel="stylesheet" type="text/css" />
+    <!-- Optional SmartWizard theme -->
+    <link href="stylesheets/smart_wizard_theme_arrows.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <br />
+
+        <!-- SmartWizard html -->
+        <div id="smartwizard">
+            <ul>
+                <li><a href="#step-1">Introduction<br />Welcome to wood knot labeling!</a></li>
+                <li><a href="#step-2">Learn to label<br />Get instructions</a></li>
+                <li><a href="#step-3" data-content-url="">Learn to label<br />Practice labeling</a></li>
+                <li><a href="#step-4" data-content-url="">Label Images<br />Ready to label!</a></li>
+               
+            </ul>
+
+            <div>
+                <div id="step-1">
+                    <h2>About</h2>
+                    This site lets you provide labels for wood knot images that will be used to train machine learning classifiers. Next, go to the ‘Learn to Label’ wizard to learn to recognize the different categories of images (we'll quiz you to see how accurate you are). Once you are trained, you can continue to the ‘Label Images’ wizard to contribute labels to our database.
+                </div>
+                <div id="step-2">
+                    <h2>The Principal Classification</h2>
+                    The categorization of wood knots is related to how the knot integrates into the surrounding wood.
+                    <p>&nbsp;</p>
+
+                    <table class="table" border="0">
+                        <tbody>
+                            <tr> <th>Sound knot</th> <td>A knot grown firmly into the surrounding wood material and does not contain any bark or signs of decay. The color may be very close to the color of sound wood.</td> </tr>
+                            <tr> <th></th> <td><p><img src="images/sound.png" width="750" /></td> </tr>
+
+                            <tr> <th>Dry knot</th> <td>A firm or partially firm knot, and has not taken part to the vital processes of growing wood, and does not contain any bark or signs of decay. The color is usually darker than the color of sound wood, and a thin dark ring or a partial ring surrounds the knot.</td> </tr>
+                            <tr> <th></th> <td><p><img src="images/dry.png" width="750" /></td> </tr>
+
+                            <tr> <th>Encased knot</th> <td>A knot surrounded totally or partially by a bark ring. Compared to dry knot, the ring around the knot is thicker.</td> </tr>
+                            <tr> <th></th> <td><p><img src="images/encased.png" width="750" /></td> </tr>
+
+                            
+                            <!--<tr> <th>Decayed knot</th> <td>A knot containing decay. Decay is difficult to recognize, as it usually affects only the strength of the knot.</td> </tr>
+                            <tr> <th></th> <td width="500"><p><img src="images/decayed.png" width="750" /></td> </tr>-->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="step-3">
+                    Here you will see wood knot images from the labeled data set. Try label them and once you have gotten enough correct in a row, you can move on to labelling images.
+                    <br />
+                    <br />
+                    <p><label>Practice goal: label 15 images correctly.</label></p>
+                </div>
+                <div id="step-4">
+                    <br />
+                    <br />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <!-- Include SmartWizard JavaScript source -->
+    <script type="text/javascript" src="javascripts/jquery.smartWizard.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.csv.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            var sessionID = '';
+            // Toolbar extra buttons
+            var btnFinish = $('<button></button>').text('Finish')
+                .addClass('btn btn-info')
+                .on('click', function () {
+                    $.ajax({
+                        type: "GET",
+                        url: "/finish",
+                        async: false,
+                        success: function (data) {
+                            sessionID = data;
+                        }
+                    });
+                    alert('You have finished labeling, thank you! Please note down your session ID starting with: ' + sessionID.substring(0, 7));                   
+                });
+            var btnCancel = $('<button></button>').text('Cancel')
+                                             .addClass('btn btn-danger')
+                                             .on('click', function(){ $('#smartwizard').smartWizard("reset"); });
+
+            // Smart Wizard
+            $('#smartwizard').smartWizard({
+                    selected: 0,
+                    theme: 'arrows',
+                    transitionEffect: 'none',
+                    contentCache: false,
+                    toolbarSettings: {toolbarPosition: 'bottom',
+                        toolbarExtraButtons: [btnFinish] // [btnFinish, btnCancel]
+                                    }
+            });          
+        }); 
+
+        $("#smartwizard").on("showStep", function (e, anchorObject, stepNumber, stepDirection) {
+            if (stepNumber == 2) {
+                $.ajax({
+                    type: "GET",
+                    url: "config/labelledknots_withoutdecayed.csv",
+                    async: true,
+                    dataType: "text",
+                    success: function (data) {
+                        processPracticeData(data);
+                        $('#practicedynamictable').pageMe({ pagerSelector: '#practicePager', showPrevNext: true, hidePageNumbers: false, perPage: 2 });
+                    }
+                    // error: function (jqXHR, textStatus, errorThrown) { alert(textStatus + errorThrown); }
+                });
+            }
+        });
+
+        $("#smartwizard").on("showStep", function (e, anchorObject, stepNumber, stepDirection) {
+            if (stepNumber == 3) {
+                $.ajax({
+                    type: "GET",
+                    url: "config/unlabelled_for_activelearning.txt",
+                    async: true,
+                    dataType: "text",
+                    success: function (data) {
+                        processUnlabeledData(data);
+                        $('#labeldynamictable').pageMe({ pagerSelector: '#labelPager', showPrevNext: true, hidePageNumbers: false, perPage: 2 });
+                    }
+                });
+            }
+        });   
+
+        // table pagination
+        $.fn.pageMe = function (opts) {
+            var $this = this,
+                defaults = {
+                    perPage: 2,
+                    showPrevNext: false,
+                    hidePageNumbers: false
+                },
+                settings = $.extend(defaults, opts);
+
+            var listElement = $this;
+            var perPage = settings.perPage;
+            
+            var children = listElement.children();
+            var pager = $('.pager');
+            
+            if (typeof settings.childSelector != "undefined") {
+                children = listElement.find(settings.childSelector);
+            }
+
+            if (typeof settings.pagerSelector != "undefined") {
+                pager = $(settings.pagerSelector);
+            }
+
+            var numItems = children.size();
+            var numPages = Math.ceil(numItems / perPage);
+
+            pager.data("curr", 0);
+
+            if (settings.showPrevNext) {
+                $('<li><a href="#" class="prev_link">«</a></li>').appendTo(pager);
+            }
+
+            var curr = 0;
+            while (numPages > curr && (settings.hidePageNumbers == false)) {
+                $('<li><a href="#" class="page_link">' + (curr + 1) + '</a></li>').appendTo(pager);
+                curr++;
+            }
+
+            if (settings.showPrevNext) {
+                $('<li><a href="#" class="next_link">»</a></li>').appendTo(pager);
+            }
+
+            pager.find('.page_link:first').addClass('active');
+            pager.find('.prev_link').hide();
+            if (numPages <= 1) {
+                pager.find('.next_link').hide();
+            }
+            pager.children().eq(1).addClass("active");
+
+            children.hide();
+            children.slice(0, perPage).show();
+
+            pager.find('li .page_link').click(function () {
+                var clickedPage = $(this).html().valueOf() - 1;
+                goTo(clickedPage, perPage);
+                return false;
+            });
+            pager.find('li .prev_link').click(function () {
+                previous();
+                return false;
+            });
+            pager.find('li .next_link').click(function () {
+                next();
+                return false;
+            });
+
+            function previous() {
+                var goToPage = parseInt(pager.data("curr")) - 1;
+                goTo(goToPage);
+            }
+
+            function next() {
+                goToPage = parseInt(pager.data("curr")) + 1;
+                goTo(goToPage);
+            }
+
+            function goTo(page) {
+
+                var proceed = true;
+                // show summary of current page
+                if (settings.pagerSelector == '#practicePager') {
+                    var hiddentable = document.getElementById("hiddensummarytable");
+                    for (var i = 0, cell; cell = hiddentable.rows[2].cells[i]; i++) {
+                        if (cell.innerHTML > 1)
+                        {
+                            proceed = false;
+                            break;
+                        }
+                    }
+                    for (var i = 0, cell; cell = hiddentable.rows[3].cells[i]; i++) {
+                        if (cell.innerHTML === "No") {
+                            proceed = false;
+                            break;
+                        }
+                    }
+                   
+                    var innerHtml = '<table>' + $('#hiddensummarytable').html().replace(/hidden/gi, "") + '</table><p><b>Congratulation! You have labelled all correctly with one attempt, now proceed to next page.</b></p>';
+                    if (proceed === false)
+                    {
+                        innerHtml = '<table>' + $('#hiddensummarytable').html().replace(/hidden/gi, "") + '</table><p><b>You have images labelled wrong, or labelled with multiple attempts. Lets try again to make sure you will label correct with one attempt.</b></p>';
+                    }
+                    $("#summarytable").html(innerHtml);
+
+                    // clean up
+                    $('#hiddensummarytable').html(ResetHiddenSummaryTable());
+                    var tdradios = document.querySelectorAll('input[type=radio]');
+                    for (var i = 0; i < tdradios.length; i++) {
+                        tdradios[i].checked = false;
+                    }
+                }
+
+                if (proceed === true) {
+                    var startAt = page * perPage,
+                        endOn = startAt + perPage;
+
+                    children.css('display', 'none').slice(startAt, endOn).show();
+
+                    if (page >= 1) {
+                        pager.find('.prev_link').show();
+                    }
+                    else {
+                        pager.find('.prev_link').hide();
+                    }
+
+                    if (page < (numPages - 1)) {
+                        pager.find('.next_link').show();
+                    }
+                    else {
+                        pager.find('.next_link').hide();
+                    }
+
+                    pager.data("curr", page);
+                    pager.children().removeClass("active");
+                    pager.children().eq(page + 1).addClass("active");
+                }
+            }
+        };
+
+        // deselect other bottons
+        // write to the db table
+        // give feedback
+        function checkPracticeRadio(tdId, radioValue) {
+            checkRadio(tdId, radioValue);
+            var feedback = '';
+
+            $.ajax({
+                type: "POST",              
+                url: "practice",
+                data: {
+                    knotname: tdId,
+                    labelid: getLabelIdByRadioValue(radioValue)
+                },
+                dataType: "text"
+            }).done(function (data) {
+                var resString = $(data).find("success");
+                if (resString != null)
+                {
+                    feedback += 'Label saved.';
+                }
+            });
+
+            var expectedLabel = document.getElementById(tdId).querySelector('input[name=expectedlabel');
+            var islabeledCorrect = '';
+            if (expectedLabel.value != radioValue) {
+                feedback += ' Try again!';
+                document.getElementById(tdId + 'feedback').style.color = "red";
+                islabeledCorrect = 'No';
+            } else {
+                feedback += ' Good job!';
+                document.getElementById(tdId + 'feedback').style.color = "green";
+                islabeledCorrect = 'Yes';
+            }
+            $('#' + tdId + 'feedback').html(feedback);
+
+            // add to hidden summary table
+            if (typeof $('#hiddensummary' + tdId) === 'undefined' || typeof ($('#hiddensummary' + tdId).val()) === 'undefined') {
+                $('#hiddensummaryimagename').append('<td id="hiddensummary' + tdId + '">' + tdId + '</td>');
+                $('#hiddensummarytriedtimes').append('<td id="hiddensummarytriedtimes' + tdId + '">1</td>');
+                $('#hiddensummaryresult').append('<td id="hiddensummaryresult' + tdId + '">' + islabeledCorrect + '</td>');
+            } else
+            {
+                $('#hiddensummarytriedtimes' + tdId).html(parseInt($('#hiddensummarytriedtimes' + tdId).html(), 10) + 1);
+                $('#hiddensummaryresult' + tdId).html(islabeledCorrect);
+            }               
+        }
+
+        // dselect other buttons, write to the db table, give feedback
+        function checkLabelRadio(tdId, radioValue) {
+            checkRadio(tdId, radioValue);
+            $.ajax({
+                type: "POST",
+                url: "label",
+                data: {
+                    knotname: tdId,
+                    labelid: getLabelIdByRadioValue(radioValue),
+                    isbadexample: getIsBadExampleByRadioValue(radioValue)
+                },
+                dataType: "text"
+            }).done(function (data) {
+                var resString = $(data).find("success");
+                if (resString != null) {
+                    // alert("saved!");
+                }
+            });
+        }
+
+        function checkRadio(tdId, radioValue) {
+
+            var tdradios = document.getElementById(tdId).querySelectorAll('input[type=radio]');
+
+            for (var i = 0; i < tdradios.length; i++) {
+                if (tdradios[i].value != radioValue) {
+                    tdradios[i].checked = false;
+                }
+            }
+        }
+
+        function getLabelIdByRadioValue(radioValue)
+        {
+            if (radioValue == 'sound') {
+                return 1;
+            } else if (radioValue == 'dry') {
+                return 2;
+            } else if (radioValue == 'encased') {
+                return 3;
+            } else
+                return null;
+        }
+
+        function getIsBadExampleByRadioValue(radioValue)
+        {
+            if (radioValue == 'notsure')
+            {
+                return 'TRUE';
+            } else
+            {
+                return 'FALSE';
+            }
+        }
+
+        function getRoundRobinData(data)
+        {
+            // take random starting point of 10 chunks
+            var numChunks = data.length / 10;
+            var randomStartingpoint = Math.floor((Math.random() * numChunks));
+            return data.slice(randomStartingpoint * 10).concat(data.slice(0, randomStartingpoint));
+        }
+
+        function processPracticeData(data) {
+            "use strict";
+            var input = $.csv.toObjects(data);
+            var html = generatePracticeTable(getRoundRobinData(input));
+            $('#step-3').empty();
+            $('#step-3').html(html);
+        }
+
+        function processUnlabeledData(data) {
+            "use strict";
+            var input = $.csv.toArrays(data);
+            var html = generateLabelTable(getRoundRobinData(input));
+            $('#step-4').empty();
+            $('#step-4').html(html);
+        }
+
+        function generatePracticeTable(data) {
+            var html = '';
+
+            if (typeof (data[0]) === 'undefined') {
+                return null;
+            }
+
+            html += '<br>Here you will see wood knot images from the labeled data set. Try label them and once you have gotten enough correct in a row, you can move on to labelling images.';
+            html += '<br>';
+            html += '<p><label>Practice goal: label 15 images correctly.</label></p>';
+            html += '<div class="row">\r\n';
+            html += '<div class="table-responsive">\r\n';
+            html += '<table class="table" border="0">\r\n';
+            html += '<tbody id="practicedynamictable">\r\n';
+
+            var length = data.length;
+
+            if (data[0].constructor === String) {
+                html += '<tr>\r\n';
+                for (var item in data) {
+                    html += '<td>' + data[item] + '</td>\r\n';
+                }
+                html += '</tr>\r\n';
+            }
+
+            if (data[0].constructor === Array) {
+                for (var row in data) {
+                    html += '<tr>\r\n';
+                    for (var item in data[row]) {
+                        html += '<td>' + data[row][item] + '</td>\r\n';
+                    }
+                    html += '</tr>\r\n';
+                }
+            }
+
+            if (data[0].constructor === Object) {
+                for (var row in data) {
+                    if (row % 5 == 0) {
+                        html += '<tr>\r\n';
+                    }
+
+                    html += '<td id="' + data[row]['file'] + '">\r\n' + data[row]['file'] + '<img src="' + data[row]['path'] + '" width="150" height="150" /><br />';
+                    html += '<input type="radio" value="sound" onclick="checkPracticeRadio(\'' + data[row]['file'] + '\', \'sound\');" /> Sound <br />';
+                    html += '<input type="radio" value="dry" onclick="checkPracticeRadio(\'' + data[row]['file'] + '\', \'dry\');" /> Dry <br />';
+                    html += '<input type="radio" value="encased" onclick="checkPracticeRadio(\'' + data[row]['file'] + '\', \'encased\');" /> Encased <br>';
+                    html += '<input type="hidden" name="expectedlabel" value="' + data[row]['knot_class'] + '"/><br>';
+                    html += '<p id="' + data[row]['file'] + 'feedback"> </p>';
+                    html += '</td>\r\n';
+
+                    if (row % 5 == 4) {
+                        html += '</tr>\r\n';
+                    }
+                }
+            }
+
+            if (data.length % 5 < 4)
+            {
+                html += '</tr>\r\n';
+            }
+            ////html += '<tr>\r\n<td>' + '<button type="submit" class="btn btn-default" id="practicesubmit"><b>Submit for Review</b></button>' + '</td >\r\n</tr>\r\n';
+
+            html += '</tbody>\r\n';
+            html += '</table>\r\n';
+            html += '</div>\r\n';
+
+            // summary table
+            html += '<div style="display:none">';
+            html += '<table id="hiddensummarytable">\r\n';
+            html += ResetHiddenSummaryTable();
+            html += '</table>\r\n';
+            html += '</div>';
+            html += '<div id="summarytable">';
+            html += '</div>';
+
+            html += '<div class="col-md-12 text-center">';
+            html += '<ul class="pagination pagination-lg pager" id="practicePager"></ul>';
+            html += '</div>\r\n';
+            html += '</div>\r\n';
+            return html;
+        }
+
+        function GetImageNameFromUrl(fullUrl)
+        {
+            return fullUrl.replace('https://woodknots.azureedge.net/unlabeled-wood-knots/', '');
+        }
+
+        function ResetHiddenSummaryTable()
+        {
+            var html = '';
+            html += '<tbody>\r\n';
+            html += '<th>Summary Table of How You Have Done</th>';
+            html += '<tr id="hiddensummaryimagename"> <td>Image Name\t</td> </tr>';
+            html += '<tr id="hiddensummarytriedtimes"> <td>Tried Times\t</td> </tr>';
+            html += '<tr id="hiddensummaryresult"> <td>Labelled Correct?\t</td> </tr>';
+            html += '</tbody>\r\n';
+            return html;
+        }
+
+        function generateLabelTable(data) {
+            var html = '';
+
+            if (typeof (data[0]) === 'undefined') {
+                return null;
+            }
+
+            html += '<br> <br><p>For each given wood knot image, you will select if it looks sound, or dry, or encased. Check "A poor example" if you can\'t decide.</p>';
+            html += '<br>';
+            html += '<div class="row">\r\n';
+            html += '<div class="table-responsive">\r\n';
+            html += '<table class="table" border="0">\r\n';
+            html += '<tbody id="labeldynamictable">\r\n';
+            
+            if (data[0].constructor === String) {
+                html += '<tr>\r\n';
+                for (var item in data) {
+                    html += '<td>' + data[item] + '</td>\r\n';
+                }
+                html += '</tr>\r\n';
+            }
+
+            if (data[0].constructor === Array) {
+                for (var row in data) {
+                    if (row % 5 == 0) {
+                        html += '<tr>\r\n';
+                        
+                    }
+                    for (var item in data[row]) {
+                        var imageName = GetImageNameFromUrl(data[row][item]);
+                        html += '<td id="' + imageName + '">\r\n' + imageName + '<img src="' + data[row][item] + '" width="150" height="150" /><br />';
+                        html += '<input type="radio" value="sound" onclick="checkLabelRadio(\'' + imageName + '\', \'sound\');" /> Sound <br />';
+                        html += '<input type="radio" value="dry" onclick="checkLabelRadio(\'' + imageName + '\', \'dry\');" /> Dry <br />';
+                        html += '<input type="radio" value="encased" onclick="checkLabelRadio(\'' + imageName + '\', \'encased\')" /> Encased <br>';
+                        html += '<input type="radio" value="notsure" onclick="checkLabelRadio(\'' + imageName + '\', \'notsure\')" /> A poor example <br>';
+                        html += '</td>\r\n';
+                    }
+                    if (row % 5 == 4) {
+                        html += '</tr>\r\n';
+                    }
+                }
+
+                if (data.length % 5 < 4) {
+                    html += '</tr>\r\n';
+                }
+            }
+
+            if (data[0].constructor === Object) {
+                for (var row in data) {
+                    html += '<tr>\r\n';
+                    for (var item in data[row]) {
+                        html += '<td>' + item + ':' + data[row][item] + '</td>\r\n';
+                    }
+                    html += '</tr>\r\n';
+                }
+            }
+
+            ////html += '<tr>\r\n<td>' + '<button type="submit" class="btn btn-default" id="labelsubmit"><b>Submit for Review</b></button>' + '</td >\r\n</tr>\r\n';
+            html += '</tbody>\r\n';
+            html += '</div>\r\n';
+            html += '<div class="col-md-12 text-center">';
+            html += '<ul class="pagination pagination-lg pager" id="labelPager"></ul>';
+            html += '</div>\r\n';
+            html += '</div>\r\n';
+            return html;
+        }
+    </script>
+</body>
+</html>
